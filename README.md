@@ -85,3 +85,18 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-runtime-ubuntu22.04 nvidia-smi
 ```commandline
 docker run -d --restart unless-stopped --gpus all -p 3000:3000 -v /mnt/docker-data/nodeodm-data:/var/www/data opendronemap/nodeodm:gpu
 ```
+####
+#### Install docker desktop for your OS
+https://docs.docker.com/desktop/setup/install/mac-install/
+
+#### You can define a specific folder for the export
+![images/dockerdesktop1.png](images/dockerdesktop1.png)
+
+###
+#### In the search bar , look for opendronemap/webadm_webapp
+
+![images/webadm1.png](images/webadm1.png)
+
+####
+#### You can run the container , specifying a different folder
+![images/webadmrun1.png](images/webadmrun1.png)
