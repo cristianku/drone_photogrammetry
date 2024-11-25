@@ -62,16 +62,26 @@ sudo systemctl restart docker
 #### Creating a folder to store the images for NodeODM
 ```commandline
 sudo mkdir -p /mnt/docker-data/nodeodm-data
-sudo chown -R root:docker /mnt/docker-data/nodeodm-data
-
-sudo chmod 777 /mnt/docker-data/nodeodm-data
+sudo chmod -R 770 /mnt/docker-data/nodeodm-data
+sudo chown -R $USER:docker /mnt/docker-data/nodeodm-data
 ```
 
-install the NVIDIA Container Toolkig
+check if NVIDIA GPU is working within the docker:
+```commandline
+docker run --rm --gpus all nvidia/cuda:11.8.0-runtime-ubuntu22.04 nvidia-smi
+```
+
 ```commandline
 sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+
+install the NVIDIA Container Toolkit
+```commandline
+docker run --rm --gpus all nvidia/cuda:11.8.0-runtime-ubuntu22.04 nvidia-smi
+
 ```
 
 ```commandline
-docker run -d --restart unless-stopped --gpus all -p 3000:3000 -v /docker-data/nodeodm-data:/var/www/data opendronemap/nodeodm:gpu
+docker run -d --restart unless-stopped --gpus all -p 3000:3000 -v /mnt/docker-data/nodeodm-data:/var/www/data opendronemap/nodeodm:gpu
 ```
