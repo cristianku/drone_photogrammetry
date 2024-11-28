@@ -52,7 +52,20 @@ sudo systemctl stop docker
 ```bash
 sudo mkdir -p /mnt/nvme1/docker
 ```
+change the group
+```yaml
+sudo chown -R root:docker /mnt/nvme1/docker
+```
+automatically inherit the group ownership of the parent directory.
+```yaml
+sudo chmod g+s /mnt/nvme1/docker
+```
+access rights
+```yaml
+sudo chmod -R 770 /mnt/nvme1/docker
+```
 
+add the docker-data folder to the docker configuration , so that it will use the nvme 
 ```commandline
 sudo vi /etc/docker/daemon.json
 put this:
@@ -67,12 +80,10 @@ ensuring that all the users in the group docker can access docker..
 sudo mkdir -p /mnt/nvme1/docker/docker-data
 sudo chown -R root:docker /mnt/nvme1/docker/docker-data
 sudo chmod -R 770 /mnt/nvme1/docker/docker-data
-sudo find /mnt/nvme1/docker/docker-data -type d -exec chmod 770 {} \;
 
 ```
 
 ```commandline
-sudo systemctl stop docker
 sudo systemctl start docker
 sudo systemctl enable docker
 ```
@@ -81,27 +92,14 @@ Verify docker configuration
 ```commandline
 sudo docker info | grep "Docker Root Dir"
 ```
-
 ```
  Docker Root Dir: /mnt/docker/docker-data
-WARNING: bridge-nf-call-iptables is disabled
-WARNING: bridge-nf-call-ip6tables is disabled
 ```
 
 ### Manage Docker as a non-root user
 #### Create the docker group.
-```
-sudo groupadd docker
-```
 #### Add your user to the docker group.
 ```
-sudo usermod -aG docker $USER
-```
-#### Verify that you can run docker commands without sudo.
-
-
-#### Add current user to docker group 
-```commandline
 sudo usermod -aG docker $USER
 sudo systemctl restart docker
 ```
@@ -110,9 +108,15 @@ sudo systemctl restart docker
 
 #### Creating a folder to store the images for NodeODM
 ```commandline
-sudo mkdir -p /mnt/nvme1/docker-data/nodeodm-data
-sudo chmod -R 770 /mnt/nvme1/docker-data/nodeodm-data
-sudo chown -R root:docker /mnt/nvme1/docker-data/nodeodm-data
+sudo mkdir -p /mnt/nvme1/docker/docker-app-data
+sudo chmod -R 770 /mnt/nvme1/docker/docker-app-data
+sudo chown -R root:docker /mnt/nvme1/docker/docker-app-data
+```
+
+```
+sudo mkdir -p /mnt/nvme1/docker/docker-app-data/nodeodm-data
+sudo chmod -R 770 /mnt/nvme1/docker/docker-app-data
+sudo chown -R root:docker /mnt/nvme1/docker/docker-app-data
 ```
 #### install nvidia container toolkit
 
@@ -142,13 +146,27 @@ docker run --rm --gpus all  nvidia/cuda:11.8.0-runtime-ubuntu22.04 nvidia-smi
 
 #### prepare the NodeODM    
 ```commandline
-sudo docker run -d --restart unless-stopped --gpus '"device=0"' -p 3000:3000 -v /mnt/nvme1/docker-data/nodeodm-data:/var/www/data --user root opendronemap/nodeodm:gpu --max-concurrency 20
+sudo docker run -d --restart unless-stopped --gpus '"device=1"' -p 3000:3000 -v /mnt/nvme1/docker/docker-app-data/nodeodm-data:/var/www/data --user root opendronemap/nodeodm:gpu --max-concurrency 20
 
 or to use all GPus
-sudo docker run -d --restart unless-stopped --gpus all -p 3000:3000 -v /mnt/nvme1/docker-data/nodeodm-data:/var/www/data --user root opendronemap/nodeodm:gpu --max-concurrency 10
-
-
+sudo docker run -d --restart unless-stopped --gpus all -p 3000:3000 -v /mnt/nvme1/docker/docker-app-data/nodeodm-data:/var/www/data --user root opendronemap/nodeodm:gpu --max-concurrency 10
 ```
+
+or create a script:
+```yaml
+vi create_nodeodm.sh
+```
+add:
+```yaml
+#!/bin/bash
+docker stop $(docker ps -a -q --filter "ancestor=opendronemap/nodeodm:gpu")
+docker rm $(docker ps -a -q --filter "ancestor=opendronemap/nodeodm:gpu")
+sudo rm -rf /mnt/nvme1/docker/docker-app-data/nodeodm-data/*
+
+sudo docker run -d --restart unless-stopped --gpus '"device=1"' -p 3000:3000 -v /mnt/nvme1/docker/docker-app-data/nodeodm-data:/var/www/data --user root opendronemap/nodeodm:gpu --max-concurrency 20
+```
+
+
 ####
 
 #### check the image
@@ -159,28 +177,5 @@ CONTAINER ID   IMAGE                      COMMAND                  CREATED      
 ```
 
 ### WEBODM directly installed in the server
+[webOdm.md](webOdm.md)
 
-### WEBODM ( web interface on the Desktop Computer)
-#### Install docker desktop for your OS, in my case MacOs
-https://docs.docker.com/desktop/setup/install/mac-install/
-
-#### You can define a specific folder for the export
-![images/dockerdesktop1.png](images/dockerdesktop1.png)
-
-
-```commandline
-git clone https://github.com/OpenDroneMap/WebODM --config core.autocrlf=input --depth 1
-cd WebODM
-./webodm.sh start
-```
-
-#### Now you can access your WebODM:
-```commandline
-http://localhost:8000
-
-```
-![images/webodm_web.png](images/webodm_web.png)
-
-#### Now we add the remote processing node
-
-![images/processingnode.png](images/processingnode.png)
